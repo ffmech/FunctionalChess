@@ -7,6 +7,7 @@ pygame.display.set_caption("Chess")
 clock = pygame.time.Clock()
 
 en_passant_piece = None
+active_color = True
 
 class ChessSurface(pygame.Surface):
     def __init__(self, *args, **kwargs):
@@ -25,6 +26,13 @@ class MyScaledSurface(pygame.Surface):
     def compare_piece(self,piece):
         print(bin(self.piece_type)[1:],bin(piece)[1:])
         if bin(self.piece_type)[1:] == bin(piece)[1:]:
+            return True
+        else:
+            return False
+
+    def is_active_clr(self):
+        #print("heeellloooo")
+        if int(bin(self.piece_type)[-4:-3]) == int(active_color):
             return True
         else:
             return False
@@ -114,6 +122,10 @@ def board_to_fen():
     positions = ""
     num_variable = 0
     count = 0
+    ac = "w"
+    if not active_color:
+        ac = "b"
+
     for i in board:
         if count >= 8:
             count = 0
@@ -141,9 +153,10 @@ def board_to_fen():
             positions += type_pieces[i]
             count += 1
 
-    return positions + " w KQkq e4 0 1"
+    return positions + f" {ac} KQkq e4 0 1"
 
 def renderPieces(fen):
+    global active_color
     piece_types = {"K": 8,
     "Q": 9,
     "B": 10,
@@ -160,6 +173,12 @@ def renderPieces(fen):
     fen = fen.split()
     piece_pos = fen[0]
     #print(piece_pos)
+
+    if fen[1] == "w":
+        print(fen[1])
+        active_color = True
+    else:
+        active_color = False
 
     i_pos = [70,70]
     board_index = 0
@@ -368,7 +387,7 @@ def pieceMoves(piece,scope=1,angles=(6,10,15,17),pawn=False):
     return [backg[x] for x in possible_moves]
 
 
-pieces = renderPieces("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq e5 0 1")
+pieces = renderPieces("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 
 #rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
 #PPPPPPPP/PPPPPPPP/PPPPPPPP/PPPPPPPP/PPPPPPPP/PPPPPPPP/PPPPPPPP/PPPPPPPP
@@ -423,14 +442,29 @@ while True:
 
             rev_pieces = pieces.copy()
             rev_pieces.reverse()
-            for piece in rev_pieces:
-                if piece.bound_box.collidepoint(event.pos) and current_piece != None and is_same_color(piece,current_piece):
-                    current_piece.bound_box.center = backg[current_piece.brd_index].piece_pos
-                    if not piece_dragging: focus_piece(piece)
+            #for piece in rev_pieces:
+            #    if piece.bound_box.collidepoint(event.pos) and current_piece != None and is_same_color(piece,current_piece):
+            #        current_piece.bound_box.center = backg[current_piece.brd_index].piece_pos
+            #        if not piece_dragging: focus_piece(piece)
+            #        break
+
+            #    if piece.bound_box.collidepoint(event.pos) and current_piece == None:
+            #        focus_piece(piece)
+            for i in backg:
+                if i.tenant == None:
+                    continue
+
+                if not i.tenant.is_active_clr():
+                    continue
+
+                if i.bound_box.collidepoint(event.pos) and current_piece == None:
+                    focus_piece(i.tenant)
                     break
 
-                if piece.bound_box.collidepoint(event.pos) and current_piece == None:
-                    focus_piece(piece)
+                if i.bound_box.collidepoint(event.pos) and current_piece != None and is_same_color(i.tenant, current_piece):
+                    current_piece.bound_box.center = backg[current_piece.brd_index].piece_pos
+                    if not piece_dragging: focus_piece(i.tenant)
+
 
             print(current_piece)
             if current_piece != None:
@@ -470,6 +504,7 @@ while True:
                     board[current_piece.brd_index] = 0
                     board[i.brd_index] = current_piece.piece_type
                     current_piece.brd_index = i.brd_index
+                    active_color = not active_color
 
                     current_piece = None
 
@@ -477,7 +512,8 @@ while True:
                     i.orig_color = (255,0,255)
                     i.fill((255,0,255))
                     break
-                elif i.bound_box.collidepoint(event.pos):
+                #elif i.bound_box.collidepoint(event.pos):
+                else:
                     current_piece.bound_box.center = backg[current_piece.brd_index].piece_pos
 
             new_board = board_to_fen()
