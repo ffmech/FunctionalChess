@@ -2,12 +2,19 @@ import pygame
 from sys import exit
 
 pygame.init()
-screen = pygame.display.set_mode((700,700))
+screen = pygame.display.set_mode((900,700))
 pygame.display.set_caption("Chess")
 clock = pygame.time.Clock()
 
 en_passant_piece = None
 active_color = True
+
+text_font = pygame.font.SysFont("Arial", 25)
+
+#function for outputting text onto the screen
+def draw_text(text, font, text_col, x, y):
+  img = font.render(text, True, text_col)
+  screen.blit(img, (x, y))
 
 class ChessSurface(pygame.Surface):
     def __init__(self, *args, **kwargs):
@@ -412,11 +419,23 @@ def is_same_color(p1,p2):
     isc = len(bin(p1.piece_type)) == len(bin(p2.piece_type))
     return isc
 
+def switch_to_cc(num):
+    alf = "abcdefgh"
+    mod_num = num%8
+    
+    return str((((64-num)+mod_num)//8))+alf[mod_num]
+
+
 piece_dragging = False
 current_piece = None
 active_moves = []
+turns = []
+turn_pos_y = 100
+turn_pos_x = 710
+new_board = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 while True:
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -497,6 +516,13 @@ while True:
                     #     i.change_color((0,0,0))
                     # else:
                     #     en_passant_piece = None
+                    #draw_text("str(i.brd_index)", text_font, (255, 255, 255), 710, 100)
+                    turns.append([switch_to_cc(i.brd_index), text_font, (255, 255, 255), turn_pos_x, turn_pos_y])
+                    if active_color:
+                        turn_pos_x += 70
+                    else:
+                        turn_pos_y += 30
+                        turn_pos_x = 710
 
                     backg[current_piece.brd_index].tenant = None
                     i.tenant = current_piece
@@ -522,6 +548,13 @@ while True:
             piece_dragging = False
 
     screen.fill("Black")
+
+    for i in turns:
+        draw_text(*i)
+    #draw_text("str(i.brd_index)", text_font, (255, 255, 255), 710, 100)
+    draw_text("White - Black", text_font, (255, 255, 255), 710, 50)
+    draw_text(new_board, text_font, (255, 255, 255), 80, 670)
+    draw_text(("White" if active_color else "Black") + "'s Turn", text_font, (255, 255, 255), 710, 20)
 
     for i in backg:
         screen.blit(i,i.bound_box)
